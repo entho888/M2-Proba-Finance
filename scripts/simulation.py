@@ -1,11 +1,22 @@
 #%%
 #Libraries
 import numpy as np 
-import numpy.random as rd
 import matplotlib.pyplot as plt
 
+rng = np.random.default_rng()
+
 def uniform(a,b,N) :
-    return "pas fini, mais je sais pas si je fais"
+    """uniform _summary_
+
+    _extended_summary_
+
+    Args:
+        a (_type_): _description_
+        b (_type_): _description_
+        N (_type_): _description_
+    """
+    return "on verra"
+
 
 def standard_brownian_simulation(time_list, gaussian_list) :
     Brownian_list = [gaussian_list[0]]
