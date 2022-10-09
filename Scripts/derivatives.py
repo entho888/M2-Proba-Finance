@@ -1,10 +1,11 @@
+#%%
 #Libraries
 import numpy as np 
 import numpy.random as rd
 import matplotlib.pyplot as plt
 
 #Variables
-N = 100
+N = 10**5
 sample = rd.randn(N)
 
 # plus tard : box muller et marsaglia
@@ -105,3 +106,29 @@ def standard_brownian_simulation(time_list, gaussian_list) :
         Brownian_list.append(Brownian_list[i-1] + np.sqrt((t2-t1))*gaussian_list[i])
 
     return Brownian_list
+
+times = np.linspace(0,100,N)
+Brownian = standard_brownian_simulation(times, sample)
+plt.plot(times, Brownian)
+plt.show()
+
+### QUIZZ 2
+"""S0 = 36.43
+Su = 62.88
+Sd = 20.34
+u = Su/S0
+d = Sd/S0
+a =0.8
+b = 7.15
+
+print(u, d)
+
+def ATM_call(x):
+    if x - S0 >= 0 : return x- S0
+    else : return 0
+
+print(CRRd1(S0, 0, u, d, ATM_call))
+
+print((1 - Pascal_triangle(7)[4]/(7**4))*100)
+print(a*(b-a) + 3*(a**2))"""
+# %%
