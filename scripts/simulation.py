@@ -25,7 +25,7 @@ def uniform_distribution(low=float, high=float, size=None) :
 
 def exponential_distribution(lamda=float, size=None) :
     """exponential_distribution : Return of shape "size" of exponential distribution 
-    of paramter lambda = lamda
+    of parameter lambda = lamda. Density is lamda*np.exp(-lamda*x).
 
     Args:
         lamda (float, optional): non negativ float, parameter of the exponential distribution.
