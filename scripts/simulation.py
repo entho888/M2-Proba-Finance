@@ -22,6 +22,83 @@ def uniform(low=float, high=float, size=None) :
         return 
     return (high - low)*rng.random(size=size) + low
 
+
+def box_muller_method(size: int=1) :
+    """Implementation of the Box-Muller method to draw independent samples of standard normal distribution 
+    (centered and variance is identity). 
+
+    Args:
+        size (non negativ integer): number of samples draw
+    """
+    
+    try :
+        iteration_number = int(np.ceil(size/2)) #number of iteration of the method needed
+        uniform_sample = rng.random((iteration_number,2))
+        normal_sample = []
+
+        for i in range(iteration_number) :
+            u1, u2 = uniform_sample[i,]
+            exponential = (-2*np.log(u1))**(.5)
+            uniform_angle = 2*np.pi*u2
+
+            normal_sample.extend((exponential*np.cos(uniform_angle), exponential*np.sin(uniform_angle)))
+
+        return normal_sample[:size]
+
+    except TypeError :
+        print("Enter an int")
+        raise
+    except ValueError :
+        print("Enter a non negativ int")
+        raise
+
+
+def marsaglia_method(size: int=1) :
+    """Implementation of the Marsaglia's polar method to draw independent samples of standard normal distribution 
+    (centered and variance is identity). 
+
+    Args:
+        size (non negativ integer): number of samples draw
+    """
+
+    try :
+        iteration_number = int(np.ceil(size/2)) #number of iteration of the method needed
+        uniform_sample = uniform(-1,1,(iteration_number,2))
+        normal_sample = []
+
+        for i in range(iteration_number) :
+            x, y = uniform_sample[i,]
+            r = x**2 + y**2
+            temp = (-2*np.log(r)/r)**(.5)
+
+            normal_sample.extend((temp*x, temp*y))
+
+        return normal_sample[:size]
+
+    except TypeError :
+        print("Enter an int")
+        raise
+    except ValueError :
+        print("Enter a non negativ int")
+        raise
+
+
+import time
+
+start_time = time.time()
+box_muller_method(10**7)
+print("Box-Muller a mis %s secondes à tourner ---" % (time.time() - start_time))
+
+start_time = time.time()
+marsaglia_method(10**7)
+print("Marsaglia a mis %s secondes à tourner ---" % (time.time() - start_time))
+
+
+
+
+
+
+
 def standard_brownian_simulation(time_list, gaussian_list) :
     Brownian_list = [gaussian_list[0]]
 
