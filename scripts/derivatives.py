@@ -55,23 +55,26 @@ def convexity_check(call_list, strike_list) :
 def identity_func(x) :
     return x
 
-def Pascal_triangle(row) :
-    Row1 = []
-    Row0 = [1]
-    for i in range(1, row) :
-        Row1.append(1)
-        for j in range(1, i) :
-            Row1.append(Row0[j-1] + Row0[j])
-        Row1.append(1)
-        Row0 = Row1
-        Row1 = []
 
-    return Row0
+def Pascal_triangle(row_number) :
+    present_Row = []
+    past_Row = [1]
+    for i in range(1, row_number+1) :
+        present_Row.append(1)
+        for j in range(1, i) :
+            present_Row.append(past_Row[j-1] + past_Row[j])
+        present_Row.append(1)
+        past_Row = present_Row
+        present_Row = []
+
+    return past_Row
+
 
 def CRRd1(S0,r,u,d, h=identity_func) :
     hSu = h(S0*u)
     hSd = h(S0*d)
     return [(1/((1+r)*(u-d)))*(hSd*u - hSu*d) , (hSu - hSd)/(S0*(u-d)), (1/((1+r)*(u-d)))*(hSu*(1+r-d) + hSd*(u - (1+r)))]
+
 
 def CRR(S0,T,r,u,d, h=identity_func) :
     hSu = h(S0*u)
