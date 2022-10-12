@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy
 
+
 rng = np.random.default_rng()
 
 def uniform_distribution(low=float, high=float, size=None) :
