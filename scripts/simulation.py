@@ -2,6 +2,7 @@
 #Libraries
 import numpy as np 
 import matplotlib.pyplot as plt
+import scipy
 
 rng = np.random.default_rng()
 
@@ -174,7 +175,6 @@ def uniform_unit_ball(dimension=int, size : int=1) :
         List of an independent sample of uniform distribution over the unit ball of R**(dimension).
     """
 
-
     U = np.empty((size, dimension))
     
     for i in range(size)  :
@@ -203,7 +203,8 @@ def marsaglia_method(size: int=1) :
 
     try :
         iteration_number = int(np.ceil(size/2)) #number of iteration of the method needed
-        normal_sample = np.empty(size)
+        normal_sample_x = np.empty(iteration_number)
+        normal_sample_y = np.empty(iteration_number)
 
         for i in range(iteration_number) :
             r=2
@@ -213,9 +214,9 @@ def marsaglia_method(size: int=1) :
             
             temp = (-2*np.log(r)/r)**(.5)
 
-            normal_sample.extend((temp*x, temp*y))
+            normal_sample_x[i], normal_sample_y[i] = temp*x, temp*y
 
-        return normal_sample[:size]
+        return np.concatenate((normal_sample_x, normal_sample_y), axis=0)[:size]
 
     except TypeError :
         print("Enter an int")
@@ -224,6 +225,40 @@ def marsaglia_method(size: int=1) :
         print("Enter a non negativ int")
         raise
 
+
+def gaussian_vector(mu, sigma, cholesky = bool) :
+    """gaussian_distribution : Return a gaussian vector of mean 'mu' and covariance matrix
+    'sigma'. Uses Box-Muller ...
+
+    Args:
+        mu (array_like): 1d array, mean vector of the gaussian vector
+        sigma (array_like): 2d array of shape (n,n), where n is the shape of mu. Sigma
+            is the matrix of the covariances between the variables within our gaussian vector.
+            The function assumes that sigma really is a covariance matrix.
+        cholesky (Boolean): if equals to 'True' then the algorithm will use the Cholesky Decomposition.
+            Otherwise, it uses scipy.linalg.sqrtm. 
+    Returns:
+        1 array_like with same shape as mu. 
+    """
+
+    try : 
+        mu, sigma = np.array(mu), np.array(sigma)
+        n = len(mu)
+        
+        if sigma.shape != (n,n) :
+            print("Error in 'gaussian_vector' of 'simulation' : shapes of parameters aren't compatible.")
+            return
+
+        if cholesky == True :
+            return (np.linalg.cholesky(sigma)).dot(box_muller_method(n)) + mu
+        return ((scipy.linalg.sqrtm(sigma))[0]).dot(box_muller_method(n)) + mu
+
+    except TypeError :
+        print("Error in 'gaussian_vector' of 'simulation' : enter array like parameters")
+        raise
+
+A = np.eye(2)
+print(scipy.linalg.sqrtm(A))
 
 def standard_brownian_simulation(time_list, gaussian_list) :
     Brownian_list = [gaussian_list[0]]
