@@ -227,7 +227,7 @@ def marsaglia_method(size: int=1) :
         raise
 
 
-def gaussian_vector(mu, sigma, cholesky = bool) :
+def gaussian_vector_distribution(mu, sigma, cholesky = bool) :
     """gaussian_distribution : Return a gaussian vector of mean 'mu' and covariance matrix
     'sigma'. Uses Box-Muller ...
 
@@ -258,24 +258,49 @@ def gaussian_vector(mu, sigma, cholesky = bool) :
         print("Error in 'gaussian_vector' of 'simulation' : enter array like parameters")
         raise
 
-A = np.eye(2)
-print(scipy.linalg.sqrtm(A))
 
-def standard_brownian_simulation(time_list, gaussian_list) :
-    Brownian_list = [gaussian_list[0]]
+def standard_brownian_motion(time_list, constant_variation: bool = True) :
+    """Standard brownian motion generator
 
-    for i in range(1, len(time_list)) :
-        t2 = time_list[i]
-        t1 = time_list[i-1]
+    Draw a standard brownian motion using the independant gaussians generated with numpy.
 
-        Brownian_list.append(Brownian_list[i-1] + np.sqrt((t2-t1))*gaussian_list[i])
+    Args:
+        time_list (array_like): non decreasing sequence of non negativ float representing time.
+        constant_variation(bool): if True then time_list has constant variation, else its variation
+            is not constant.
 
-    return Brownian_list
+    Returns:
+        Array of float representing the values of the brownian motion at times in the time_list.
+    """
+
+    n = len(time_list) #number of gaussian needed
+    gaussian_vector = rng.normal(loc=0, scale=1, size=n)
+
+    if constant_variation == False :
+        D = [(time_list[0])**(.5)] + [(time_list[k] - time_list[k-1])**(.5) for k in range(1,n)]
+        return ((np.tri(n,n,0)).dot(np.diag(D))).dot(gaussian_vector)
+
+    delta = time_list[1] - time_list[0] #delta = variation of time_list
+    return np.sqrt(delta)*((np.tri(n,n,0))).dot(gaussian_vector)
 
 
+def fractionnal_brownian_motion() :
+    return
+
+
+def brownian_bridge() :
+    return
+
+
+def geometric_brownian_motion() :
+    return
+
+
+###
 """
-times = np.linspace(0,100,N)
-Brownian = standard_brownian_simulation(times, sample)
+N = 10**3
+times = np.linspace(0,10,N)
+Brownian = standard_brownian_simulation(times)
 plt.plot(times, Brownian)
 plt.show()
 """
