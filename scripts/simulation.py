@@ -263,38 +263,6 @@ def marsaglia_method(size = 1, random_state: np.random.Generator=rng) :
         raise
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def gaussian_vector_distribution(size =1, mu = 0, sigma = 1, cholesky: bool=True, 
                                 method = 'default',
                                 random_state: np.random.Generator=rng) :
@@ -450,6 +418,16 @@ def standard_brownian_motion_timeParameters(n_times: int, n_paths : int,
         return brownian
 
 
+
+
+
+
+#####################################################
+#####################################################
+#####################################################
+#####################################################
+# time_list == None pose problème, suffirait pas de check le type (j'ai pas le temps là) ?
+
 def refine_brownian_motion(paths, time_list = None, 
                             constant_step : bool = True, 
                             random_state: np.random.Generator=rng) :
@@ -504,7 +482,7 @@ def refine_brownian_motion(paths, time_list = None,
 
             return non_random_part_paths + random_part_paths, refined_time_list
 
-"""
+
 B = standard_brownian_motion_timeParameters(50, 3, final_time = 2.0)
 time_list = np.linspace(0, 2, 50, endpoint = True)
 refined_B, refined_time_list = refine_brownian_motion(B, time_list)
@@ -513,7 +491,7 @@ plt.plot(B, time_list)
 plt.show()
 plt.plot(refined_B, refined_time_list)
 plt.show()
-"""
+
 
 def fractionnal_brownian_motion() :
     return
