@@ -359,10 +359,10 @@ def gaussian_vector_distribution(size =1, mu = 0, sigma = 1, cholesky: bool=True
         raise
 
 
-def standard_brownian_motion_timeList(time_list, n_paths: int = 1, 
+def standard_brownian_motion_1d_timeList(time_list, n_paths: int = 1, 
                                     increments : bool = False,
                                     random_state: np.random.Generator=rng) :
-    """Standard brownian motion generator
+    """Standard brownian motion (1 dimension) generator
 
     Draw 'n_paths' standard brownian motion using the independant gaussians generated with numpy.
     Generated using independent increasing increments.
@@ -390,11 +390,11 @@ def standard_brownian_motion_timeList(time_list, n_paths: int = 1,
 
     return np.cumsum(increments_array, axis = 0)
 
-def standard_brownian_motion_timeParameters(n_times: int, n_paths : int,
+def standard_brownian_motion_1d_timeParameters(n_times: int, n_paths : int,
                                             final_time: float = 1.0,
                                             increments : bool = False,
                                             random_state: np.random.Generator=rng) :
-    """Standard brownian motion generator
+    """Standard brownian motion (1 dimension) generator
 
     Draw 'n_paths' standard brownian motion using the independant gaussians generated with numpy.
     Generated using independent increasing increments.
@@ -428,10 +428,10 @@ def standard_brownian_motion_timeParameters(n_times: int, n_paths : int,
 #####################################################
 # time_list == None pose problème, suffirait pas de check le type (j'ai pas le temps là) ?
 
-def refine_brownian_motion(paths, time_list = None, 
+def refine_brownian_motion_1d(paths, time_list = None, 
                             constant_step : bool = True, 
                             random_state: np.random.Generator=rng) :
-    """Refine a given brownian motion :
+    """Refine a given brownian motion (1 dimension):
 
     For every 2 succesives times, add a point at the middle time on every path. 
     New points are determined using a formula (Lévy) that gives the conditionnal law of a Brownian knowing a point in the past 
@@ -482,7 +482,7 @@ def refine_brownian_motion(paths, time_list = None,
 
             return non_random_part_paths + random_part_paths, refined_time_list
 
-
+"""
 B = standard_brownian_motion_timeParameters(50, 3, final_time = 2.0)
 time_list = np.linspace(0, 2, 50, endpoint = True)
 refined_B, refined_time_list = refine_brownian_motion(B, time_list)
@@ -491,7 +491,7 @@ plt.plot(B, time_list)
 plt.show()
 plt.plot(refined_B, refined_time_list)
 plt.show()
-
+"""
 
 def fractionnal_brownian_motion() :
     return
