@@ -3,6 +3,7 @@
 import numpy as np 
 import matplotlib.pyplot as plt
 import scipy
+import seaborn as sns 
 
 
 sq = np.random.SeedSequence()
@@ -459,16 +460,18 @@ def refine_brownian_motion_1d(paths, time_list = None,
 
             refined_paths = random_part_paths + non_random_part_paths
 
-            if time_list == None : 
-                return refined_paths
+            if type(time_list) != np.ndarray and type(time_list) != list :
+                if time_list == None : 
+                    return refined_paths
 
             else :
-                return refined_paths, np.linspace(time_list[0], time_list[-1], step/2, endpoint=True)
+                return refined_paths, np.arange(time_list[0], time_list[-1] + step/2, step/2)
 
     else :
-        if time_list == None : 
-            print("Error in 'refine_brownian_motion' in 'simulation' : arguments are missing")
-            return
+        if type(time_list) != np.ndarray and type(time_list) != list :
+            if time_list == None : 
+                print("Error in 'refine_brownian_motion' in 'simulation' : arguments are missing")
+                return
         else :
             temp = (paths.repeat(2, axis=0))
             non_random_part_paths = ( temp[1:,:] + temp[:-1,:] )/2
@@ -482,11 +485,24 @@ def refine_brownian_motion_1d(paths, time_list = None,
 
             return non_random_part_paths + random_part_paths, refined_time_list
 
-"""
-B = standard_brownian_motion_timeParameters(50, 3, final_time = 2.0)
-time_list = np.linspace(0, 2, 50, endpoint = True)
-refined_B, refined_time_list = refine_brownian_motion(B, time_list)
 
+B = standard_brownian_motion_1d_timeParameters(50, 100, final_time = 2.0)
+time_list = np.linspace(0, 2, 51, endpoint = True)
+B1, time_list1 = refine_brownian_motion_1d(B, time_list)
+B2, time_list2 = refine_brownian_motion_1d(B1, time_list1)
+B3, time_list3 = refine_brownian_motion_1d(B2, time_list2)
+Bs = [B, B1, B2, B3]
+Time_List_List = [time_list, time_list1, time_list2, time_list3]
+
+fig, axs = plt.subplots(ncols=2, nrows=2, figsize=(10,6), 
+                        sharex=True, sharey = True, layout='tight')
+for n, (paths, ax) in enumerate(zip(Bs, axs.flat)):
+    time = Time_List_List[n]
+    for path in paths.T:
+        sns.lineplot(x=time, y=path, color='C0', alpha=0.2, ax=ax)
+    ax = sns.lineplot(x=time, y=paths[:,0], color='C1', lw=2, label=f'Iteration n = {n+1}', ax=ax)
+
+"""
 plt.plot(B, time_list)
 plt.show()
 plt.plot(refined_B, refined_time_list)
