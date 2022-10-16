@@ -277,8 +277,7 @@ def gaussian_vector_distribution(size =1, mu = 0, sigma = 1, cholesky: bool=True
     Possibility to choose the method of generation used.
 
     Args:
-        size (tuple) : 'shape of the output'. The function draws a sample of shape 'size'
-            following the uniform unit ball distribution of dimension 'dimension'.
+        size (tuple) : 'shape of the output'. The function draws a sample of shape 'size' of gaussian vectors.
             Defaults to 1.
         mu (array_like): 1d array, mean vector of the gaussian vector
         sigma (array_like): 2d array of shape (n,n), where n is the shape of mu. Sigma
@@ -1213,10 +1212,84 @@ def brownian_bridge_1d_timeParameters(n_times: int, n_paths : int,
     return standard_brownian_motion - (1/final_time)*time_list*B_T
     
 
-def fractionnal_brownian_motion(hudhe) :
-    return
+def fractionnal_brownian_motion_1d_timeList(time_list, n_paths: int = 1, 
+                                        hudge_index: float = .5,
+                                        random_state: np.random.Generator=rng) :
+    """Fractionnal brownian motion (1 dimension) generator
+
+    Draw 'n_paths' of a fractionnal brownian motion of H='hudge_index'.
+    Generated using independent increasing increments.
+
+    Args:
+        time_list (array_like): non decreasing sequence of non negativ float representing time. 
+            This function doesn't check the 'non-decreasing' caracteristic so it won't return a brownian motion
+            if time_list is not non decreasing.
+        n_paths (int): number of paths to generate
+        hudge_index (float): float in (0,1). If equal to 1/2, the function returns a standard brownian motion.
+            If < 1/2, the increments of the process are positively correlated, if >1/2 it's negatively correlated.
+        random_state : 'np.random.Generator' used for simulation. Defaults to rng.
+
+    Returns:
+        Array of float representing the values of the fractionnal brownian motion with H='hudge_index' at times in the time_list.
+    """
+    #Partial validity check of time_list
+    if time_list[-1] <=0 :
+        print("Error in 'fractionnal_brownian_motion_1d_timeList' of 'simulation' : arg 'time_list' is not valid (last value not non negativ)")
+        return
+    if hudge_index <= 0 or hudge_index >= 1 :
+        print("Error in 'fractionnal_brownian_motion_1d_timeList' of 'simulation' : arg 'hudge_index' is not valid.")
+        return
+
+    n_times = len(time_list)
+    H = hudge_index
+    covariance_matrix = np.empty((n_times, n_times))
+
+    for i in range(n_times) :
+        for j in range(n_times) :
+            covariance_matrix[i,j] = (time_list[i])**(2*H) + (time_list[j])**(2*H) - (np.abs(time_list[i] - time_list[j]))**(2*H)
+
+    return gaussian_vector_distribution(size=n_paths, sigma = covariance_matrix, random_state=random_state)
 
 
+def fractionnal_brownian_motion_1d_timeParameters(n_times: int, n_paths: int = 1, 
+                                        final_time: float=1.0,
+                                        hudge_index: float = .5,
+                                        random_state: np.random.Generator=rng) :
+    """Fractionnal brownian motion (1 dimension) generator
+
+    Draw 'n_paths' of a fractionnal brownian motion of H='hudge_index'.
+    Generated using independent increasing increments.
+
+    Args:
+        n_times (int): number of timesteps
+        n_paths (int): number of paths simulated
+        final_time (float, optional): Final time of simulation. Defaults to 1.0.
+        hudge_index (float): float in (0,1). If equal to 1/2, the function returns a standard brownian motion.
+            If < 1/2, the increments of the process are positively correlated, if >1/2 it's negatively correlated.
+        random_state : 'np.random.Generator' used for simulation. Defaults to rng.
+
+    Returns:
+        Array of float representing the values of the fractionnal brownian motion with H='hudge_index' at times in the time_list.
+    """
+
+    #Validity check of args
+    if final_time <=0 :
+        print("Error in 'fractionnal_brownian_motion_1d_timeParameters' of 'simulation' : arg 'final_time' is not valid.")
+        return
+    if hudge_index <= 0 or hudge_index >= 1 :
+        print("Error in 'fractionnal_brownian_motion_1d_timeParameters' of 'simulation' : arg 'hudge_index' is not valid.")
+        return
+
+    H = hudge_index
+    step = final_time/n_times
+    covariance_matrix = np.empty((n_times, n_times))
+
+    for i in range(n_times) :
+        for j in range(n_times) :
+            covariance_matrix[i,j] = (i)**(2*H) + (j)**(2*H) - (np.abs(i-j))**(2*H)
+    covariance_matrix = (step**(2*H))*covariance_matrix
+    
+    return gaussian_vector_distribution(size=n_paths, sigma = covariance_matrix, random_state=random_state)
 
 
 # %%
