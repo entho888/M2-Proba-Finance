@@ -91,3 +91,24 @@ def CRR(S0,T,r,u,d, h=identity_func) :
 
     return V/((1+r)**T)
 
+
+################################################################################################################
+################################################################################################################
+################################################################################################################
+### Modèle de BS
+# Prix d'un call modèle de BS -> portefeuille dynamique
+# Sensibilités (delta, vega, gamma, theta)
+
+### Vol implicite 
+# Descente de gradients -> vol implicite
+# Dichotomie -> vol implicite
+
+### Modèle log décalé
+# Pricer
+# Sensi
+
+### Autre modèle 
+# Pricer
+# Sensi
+
+### Methode de Monte-Carlo, intervalle de confiance, etc 

@@ -6,10 +6,15 @@ import scipy
 import seaborn as sns 
 
 
+"""
 sq = np.random.SeedSequence()
 seed = sq.entropy
 print('seed = ', seed)
-rng = np.random.default_rng(sq)
+"""
+rng = np.random.default_rng(1)
+
+
+
 
 def uniform_distribution(low=float, high=float, size=None, random_state: np.random.Generator=rng) :
     """Return an independent sample of size "size" of uniform distribution over 
@@ -67,7 +72,7 @@ def bernoulli(p=float, size=None, random_state: np.random.Generator=rng) :
         random_state : 'np.random.Generator' used for simulation. Defaults to rng.
     """
     if (p < 0) or (p >1) :
-        print("Error in 'binomial' function of 'simulation' : p must be include in [0,1]")
+        print("Error in 'bernoulli' function of 'simulation' : p must be include in [0,1]")
         return
 
     def jump_function(x) :
@@ -269,7 +274,7 @@ def gaussian_vector_distribution(size =1, mu = 0, sigma = 1, cholesky: bool=True
                                 random_state: np.random.Generator=rng) :
     """gaussian_distribution : Return a gaussian vector of mean 'mu' and covariance matrix
     'sigma'. 
-    Uses Box-Muller ...
+    Possibility to choose the method of generation used.
 
     Args:
         size (tuple) : 'shape of the output'. The function draws a sample of shape 'size'
@@ -315,7 +320,7 @@ def gaussian_vector_distribution(size =1, mu = 0, sigma = 1, cholesky: bool=True
                     vector_dimension = mu.size
                 else :
                     if sigma.shape != (vector_dimension,vector_dimension) :
-                        print("Error in 'gaussian_vector' of 'simulation' : shapes of parameters aren't compatible.")
+                        print("Error in 'gaussian_vector_distribution' of 'simulation' : shapes of parameters aren't compatible.")
                         return
 
         # Reshaping mu and drawing the gaussians
@@ -356,7 +361,7 @@ def gaussian_vector_distribution(size =1, mu = 0, sigma = 1, cholesky: bool=True
         return np.einsum('ij,j...->i...', covariance_matrix_sqrt, standard_gaussian) + mu
 
     except TypeError :
-        print("Error in 'gaussian_vector' of 'simulation' : enter array-like parameters")
+        print("Error in 'gaussian_vector_distribution' of 'simulation' : enter array-like parameters")
         raise
 
 
@@ -370,7 +375,7 @@ def standard_brownian_motion_1d_timeList(time_list, n_paths: int = 1,
 
     Args:
         time_list (array_like): non decreasing sequence of non negativ float representing time. 
-            Tis function doesn't check if 'non-decreasing' caracteristic so it won't return a brownian motion
+            This function doesn't check the 'non-decreasing' caracteristic so it won't return a brownian motion
             if time_list is not non decreasing.
         n_paths (int): number of paths to generate
         increments (bool) : Determine if we return the increments array or not.
@@ -379,17 +384,22 @@ def standard_brownian_motion_1d_timeList(time_list, n_paths: int = 1,
     Returns:
         Array of float representing the values of the brownian motion at times in the time_list.
     """
+    #Partial validity check of time_list
+    if time_list[-1] <=0 :
+        print("Error in 'standard_brownian_motion_1d_timeList' of 'simulation' : arg 'time_list' is not valid (last value not non negativ)")
+        return
 
     n_times = len(time_list) #number of gaussian needed
     gaussian_vector = random_state.normal(loc=0, scale=1, size=(n_times, n_paths))
 
-    Diagonal = np.sqrt( time_list - (np.concatenate([0], time_list[:n-1]))  )
-    increments_array = np.diag(D).dot(gaussian_vector)
+    Diagonal = np.sqrt( time_list - (np.append(0, (time_list[:-1])))  )
+    increments_array = np.diag(Diagonal) @ gaussian_vector
 
     if increments :
         return increments_array
 
     return np.cumsum(increments_array, axis = 0)
+
 
 def standard_brownian_motion_1d_timeParameters(n_times: int, n_paths : int,
                                             final_time: float = 1.0,
@@ -404,11 +414,16 @@ def standard_brownian_motion_1d_timeParameters(n_times: int, n_paths : int,
         n_times (int): number of timesteps
         n_paths (int): number of paths simulated
         final_time (float, optional): Final time of simulation. Defaults to 1.0.
+        increments (bool) : Determine if we return the increments array or not.
         random_state : 'np.random.Generator' used for simulation. Defaults to rng.
 
     Returns:
         `np.array` of shape `(n_times+1, n_paths)` containing the paths.
     """
+    #Validity check of args
+    if final_time <=0 :
+        print("Error in 'standard_brownian_motion_1d_timeParameters' of 'simulation' : arg 'final_time' is not valid.")
+        return
 
     increments_list = np.sqrt(final_time / n_times) * random_state.standard_normal((n_times, n_paths))
     if increments:
@@ -418,16 +433,6 @@ def standard_brownian_motion_1d_timeParameters(n_times: int, n_paths : int,
         brownian[1:] = np.cumsum(increments_list, axis=0)
         return brownian
 
-
-
-
-
-
-#####################################################
-#####################################################
-#####################################################
-#####################################################
-# time_list == None pose problème, suffirait pas de check le type (j'ai pas le temps là) ?
 
 def refine_brownian_motion_1d(paths, time_list = None, 
                             constant_step : bool = True, 
@@ -448,16 +453,28 @@ def refine_brownian_motion_1d(paths, time_list = None,
         If time_list == None : 2d array representing the refined brownian motion.
         Else : 2d array representing the refined brownian motion and its associated new time_list.
     """
+    #Partial validity check of time_list
+    if time_list[-1] <=0 :
+        print("Error in 'refine_brownian_motion_1d' of 'simulation' : arg 'time_list' is not valid (last value not non negativ)")
+        return
+
     n_times, n_paths = paths.shape
     if constant_step == True :
             # We use the expression of the brownian conditionally to his future and past
             temp = (paths.repeat(2, axis=0))
             non_random_part_paths = ( temp[1:,:] + temp[:-1,:] )/2 #creates an offset then calculates the mean
             
-            step = 1/n_times
+            #Step
+            if type(time_list) == np.ndarray or type(time_list) == list :
+                step = time_list[-1]/(n_times -1)
+            else : 
+                step = 1/(n_times -1) #We suppose that final_time = 1.0
+
+            #Random part 
             random_part_paths = np.zeros(non_random_part_paths.shape)
             random_part_paths[1::2] = np.sqrt(step/4)*random_state.standard_normal((n_times - 1,n_paths)) #We add the random part to new points
 
+            #Return
             refined_paths = random_part_paths + non_random_part_paths
 
             if type(time_list) != np.ndarray and type(time_list) != list :
@@ -470,64 +487,736 @@ def refine_brownian_motion_1d(paths, time_list = None,
     else :
         if type(time_list) != np.ndarray and type(time_list) != list :
             if time_list == None : 
-                print("Error in 'refine_brownian_motion' in 'simulation' : arguments are missing")
+                print("Error in 'refine_brownian_motion_1d' in 'simulation' : arguments are missing")
                 return
         else :
+            #Deterministic part
             temp = (paths.repeat(2, axis=0))
             non_random_part_paths = ( temp[1:,:] + temp[:-1,:] )/2
 
+            #Random part
             random_part_paths = np.zeros(non_random_part_paths.shape)
             temp = (time_list.repeat(2, axis=0))
             sqrt_covariance_matrix = np.sqrt(( temp[1:] - temp[:-1] ))/2
             random_part_paths[1::2] = (np.diag(sqrt_covariance_matrix)).dot(random_state.standard_normal((n_times - 1,n_paths)))
 
+            #Return
             refined_time_list = ( (time_list.repeat(2, axis=0))[1:,:] + (time_list.repeat(2, axis=0))[:-1,:] )/2
 
             return non_random_part_paths + random_part_paths, refined_time_list
 
+#test
+"""
+B1 = standard_brownian_motion_1d_timeParameters(50, 100, final_time = 2.0)
+T1 = np.linspace(0, 2, 51, endpoint = True)
 
-B = standard_brownian_motion_1d_timeParameters(50, 100, final_time = 2.0)
-time_list = np.linspace(0, 2, 51, endpoint = True)
-B1, time_list1 = refine_brownian_motion_1d(B, time_list)
-B2, time_list2 = refine_brownian_motion_1d(B1, time_list1)
-B3, time_list3 = refine_brownian_motion_1d(B2, time_list2)
-Bs = [B, B1, B2, B3]
-Time_List_List = [time_list, time_list1, time_list2, time_list3]
+B2, T2 = refine_brownian_motion_1d(B1, T1)
+B3, T3 = refine_brownian_motion_1d(B2, T2)
+B4, T4 = refine_brownian_motion_1d(B3, T3)
+Bs = [B1, B2, B3, B4]
+TL = [T1, T2, T3, T4]
 
 fig, axs = plt.subplots(ncols=2, nrows=2, figsize=(10,6), 
                         sharex=True, sharey = True, layout='tight')
 for n, (paths, ax) in enumerate(zip(Bs, axs.flat)):
-    time = Time_List_List[n]
+    time = TL[n]
     for path in paths.T:
         sns.lineplot(x=time, y=path, color='C0', alpha=0.2, ax=ax)
-    ax = sns.lineplot(x=time, y=paths[:,0], color='C1', lw=2, label=f'Iteration n = {n+1}', ax=ax)
-
-"""
-plt.plot(B, time_list)
-plt.show()
-plt.plot(refined_B, refined_time_list)
-plt.show()
+    ax = sns.lineplot(x=time, y=paths[:,0], color='C1', lw=2, label=f'Iteration n = {n}', ax=ax)
 """
 
-def fractionnal_brownian_motion() :
+
+def standard_brownian_motion_2d_timeList(time_list, n_paths: int = 1, 
+                                        correlation : float = 0.0,
+                                        increments : bool = False,
+                                        random_state: np.random.Generator=rng) :
+    """Simulated paths of 2d standard brownian motion with correlated components
+
+    Args:
+        time_list (array_like): list of times associated with the brownian
+        n_paths (int, optional): number of paths. Defaults to 1.
+        correlation (float, optional): float between -1 and 1. Correlation between the two components of the brownian. Defaults to 0.0.
+        increments (bool, optional): If True, the function returns the increments of the brownian. Defaults to False.
+        random_state : 'np.random.Generator' used for simulation. Defaults to rng.
+
+    Returns:
+        'np.array' of shape (2, len(time_list), n_paths) containing paths if increments == 'False', containing the increments otherwise.
+    """
+    #Some arg validity tests
+    if time_list[-1] <=0 :
+        print("Error in 'standard_brownian_motion_2d_timeList' of 'simulation' : arg 'time_list' is not valid (last value not non negativ)")
+        return
+    if correlation > 1 or correlation < -1 :
+        print("Error in 'standard_brownian_motion_2d_timeList' of 'simulation' : argument 'correlation' is not a correlation")
+        return
+
+    no_correlation_2d_increments = np.array([standard_brownian_motion_1d_timeList(time_list=time_list, n_paths = n_paths,
+                                                                    increments = True, random_state=random_state),
+                                        standard_brownian_motion_1d_timeList(time_list=time_list, n_paths = n_paths,
+                                                                    increments = True, random_state=random_state)]) 
+    
+    correlation_2d_increments = no_correlation_2d_increments.copy()
+    correlation_2d_increments[1] = correlation*no_correlation_2d_increments[0] + np.sqrt(1 - correlation**2)*no_correlation_2d_increments[1]
+
+    if increments == True :  
+        return correlation_2d_increments
+
+    else :
+        return np.cumsum(correlation_2d_increments, axis = 1)
+
+#test
+"""
+N, M = 50, 2
+T = 1
+rho = -0.9
+times = np.arange(N+1)*(T / N)
+
+W2 = standard_brownian_motion_2d_timeList(times, M, rho)
+sns.lineplot(x=times, y=W2[0,:,1], color='C0', label='Dimension 1')
+sns.lineplot(x=times, y=W2[1,:,1], color='C1', label='Dimension 2')
+"""
+
+
+def standard_brownian_motion_2d_timeParameters(n_times: int, n_paths : int,
+                                            final_time: float = 1.0,
+                                            correlation: float = 0.0,
+                                            increments: bool = False,
+                                            random_state: np.random.Generator=rng) :
+    """Simulated paths of 2d standard brownian motion with correlated components
+
+    Args:
+        n_times (int): number of timesteps
+        n_paths (int): number of paths simulated
+        final_time (float, optional): Final time of simulation. Defaults to 1.0.
+        correlation (float, optional): float between -1 and 1. Correlation between the two components of the brownian. Defaults to 0.0.
+        increments (bool, optional): If True, the function returns the increments of the brownian. Defaults to False.
+        random_state : 'np.random.Generator' used for simulation. Defaults to rng.
+
+    Returns:
+        'np.array' of shape (2, len(time_list), n_paths) containing paths if increments == 'False', containing the increments otherwise.
+    """
+    # Some validity checks
+    if final_time <=0 :
+        print("Error in 'standard_brownian_motion_2d_timeParameters' of 'simulation' : arg 'final_time' is not valid.")
+        return
+    if correlation > 1 or correlation < -1 :
+        print("Error in 'standard_brownian_motion_2d_timeParameters' of 'simulation' : argument 'correlation' is not a correlation")
+        return
+
+    no_correlation_2d_increments = np.array([standard_brownian_motion_1d_timeParameters(n_times=n_times, n_paths=n_paths,
+                                                                                    final_time=final_time, increments=True,
+                                                                                    random_state=random_state),
+                                        standard_brownian_motion_1d_timeParameters(n_times=n_times, n_paths=n_paths,
+                                                                                    final_time=final_time, increments=True,
+                                                                                    random_state=random_state)]) 
+    
+    correlation_2d_increments = no_correlation_2d_increments.copy()
+    correlation_2d_increments[1] = correlation*no_correlation_2d_increments[0] + np.sqrt(1 - correlation**2)*no_correlation_2d_increments[1]
+          
+    if increments == True :  
+        return correlation_2d_increments
+
+    else :
+        return np.cumsum(correlation_2d_increments, axis = 1)
+
+#test
+"""
+N, M = 50, 2
+T = 1
+rho = -0.9
+times = np.arange(N+1)*(T / N)
+
+W2 = standard_brownian_motion_2d_timeParameters(N, M, correlation=rho)
+sns.lineplot(x=times, y=W2[0,:,1], color='C0', label='Dimension 1')
+sns.lineplot(x=times, y=W2[1,:,1], color='C1', label='Dimension 2')
+"""
+
+
+def standard_brownian_motion_multidim_timeList(time_list, n_paths: int = 1, 
+                                        correlation : np.array=None,
+                                        cholesky: bool = True,
+                                        increments : bool = False,
+                                        random_state: np.random.Generator=rng) :
+    """Simulated paths of 2d standard brownian motion with correlated components
+
+    Args:
+        time_list (array_like): list of times associated with the brownian
+        n_paths (int, optional): number of paths. Defaults to 1.
+        correlation (np.array, optional): Correlation matrix : symmetric and all coefficients between are float between -1 and 1.
+            Diagonal coeff are equal to 1. 
+        cholesky (bool): if True then the function suppose the correlation matrix is definite positiv. Defaults to True.
+        increments (bool, optional): If True, the function returns the increments of the brownian. Defaults to False.
+        random_state : 'np.random.Generator' used for simulation. Defaults to rng.
+
+    Returns:
+        Let n be correlation.shape[0].
+        'np.array' of shape (n, len(time_list), n_paths) containing paths if increments == 'False', containing the increments otherwise.
+    """
+    #Some arg validity tests
+    if time_list[-1] <=0 :
+        print("Error in 'standard_brownian_motion_multidim_timeList' of 'simulation' : arg 'time_list' is not valid (last value not non negativ)")
+        return
+
+    if correlation is None : #considering None is the same as 0.
+        return standard_brownian_motion_1d_timeList(time_list=time_list, npaths=n_paths,
+                                                    increments=increments, random_state=random_state)
+    
+    correlation = np.array(correlation)
+    dimension = correlation.shape[0]
+
+    if np.all( correlation <= 1) and np.all( correlation >= -1) :
+        # d dimensionnal (d = 'dimension') brownian motion with independent component
+        no_correlation_increments = np.array([standard_brownian_motion_1d_timeList(time_list=time_list, npaths=n_paths,
+                                                                                increments=True, 
+                                                                                random_state=random_state)
+                                            for i in range(dimension)])
+
+        # Square root of correlation matrix
+        if cholesky == True :
+            correlation_matrix_sqrt = np.linalg.cholesky(correlation)
+        else : 
+            correlation_matrix_sqrt = (scipy.linalg.sqrtm(correlation))[0]
+
+        correlation_increments = np.einsum('ij,jkl->ikl', correlation_matrix_sqrt, no_correlation_increments)
+
+        if increments == True : return correlation_increments
+        else : return np.cumsum(correlation_increments, axis=1)
+
+    else :
+        print("Error in 'standard_brownian_motion_multidim_timeList' of 'simulation' : arg 'correlation' is not a correlation matrix")
+        return
+
+
+def standard_brownian_motion_multidim_timeParameters(n_times: int, n_paths : int,
+                                                    final_time: float = 1.0, 
+                                                    correlation : np.array=None,
+                                                    cholesky: bool = True,
+                                                    increments : bool = False,
+                                                    random_state: np.random.Generator=rng) :
+    """Simulated paths of 2d standard brownian motion with correlated components
+
+    Args:
+        time_list (array_like): list of times associated with the brownian
+        n_paths (int, optional): number of paths. Defaults to 1.
+        correlation (np.array, optional): Correlation matrix : symmetric and all coefficients between are float between -1 and 1.
+            Diagonal coeff are equal to 1. 
+        cholesky (bool): if True then the function suppose the correlation matrix is definite positiv. Defaults to True.
+        increments (bool, optional): If True, the function returns the increments of the brownian. Defaults to False.
+        random_state : 'np.random.Generator' used for simulation. Defaults to rng.
+
+    Returns:
+        Let n be correlation.shape[0].
+        'np.array' of shape (n, len(time_list), n_paths) containing paths if increments == 'False', containing the increments otherwise.
+    """
+    # Some validity checks
+    if final_time <=0 :
+        print("Error in 'standard_brownian_motion_multidim_timeParameters' of 'simulation' : arg 'final_time' is not valid.")
+        return
+
+    if correlation is None : #considering None is the same as 0.
+        return standard_brownian_motion_1d_timeParameters(n_times=n_times, n_paths=n_paths, final_time=final_time,
+                                                        increments=increments, random_state=random_state)                                   
+    
+    correlation = np.array(correlation)
+    dimension = correlation.shape[0]
+
+    if np.all( correlation <= 1) and np.all( correlation >= -1) :
+        # d dimensionnal (d = 'dimension') brownian motion with independent component
+        no_correlation_increments = np.array([standard_brownian_motion_1d_timeParameters(n_times=n_times, n_paths=n_paths, 
+                                                                                final_time=final_time,
+                                                                                increments=True, 
+                                                                                random_state=random_state)
+                                            for i in range(dimension)])
+
+        # Square root of correlation matrix
+        if cholesky == True :
+            correlation_matrix_sqrt = np.linalg.cholesky(correlation)
+        else : 
+            correlation_matrix_sqrt = (scipy.linalg.sqrtm(correlation))[0]
+
+        correlation_increments = np.einsum('ij,jkl->ikl', correlation_matrix_sqrt, no_correlation_increments)
+
+        if increments == True : return correlation_increments
+        else : return np.cumsum(correlation_increments, axis=1)
+
+    else :
+        print("Error in 'standard_brownian_motion_multidim_timeParameters' of 'simulation' : arg 'correlation' is not a correlation matrix")
+        return
+
+
+def geometric_brownian_motion_1d_timeList(time_list, n_paths: int = 1, 
+                                        value_at_0: float=1.0,
+                                        drift: float=1.0,
+                                        volatility: float=0.0,
+                                        increments: bool = False,
+                                        random_state: np.random.Generator=rng) :
+    """Geometric brownian motion (1 dimension) generator
+
+    Draw 'n_paths' of geometric brownian motion using the independant gaussians generated with numpy.
+    Generated using independent increasing increments.
+
+    Args:
+        time_list (array_like): non decreasing sequence of non negativ float representing time. 
+            This function doesn't check the 'non-decreasing' caracteristic so it won't return a geometric 
+            brownian motion if time_list is not non decreasing.
+        n_paths (int): number of paths to generate
+        value_at_0 (float): value of the geometric brownian motion at time = 0.
+        drift (float): drift of the geometric brownian motion. 
+        volatility (float): volatility of the geometric brownian motion.
+        increments (bool) : Determine if we return the increments array or not.
+        random_state : 'np.random.Generator' used for simulation. Defaults to rng.
+
+    Returns:
+        Array of float representing the values of the geometric brownian motion at times in the time_list.
+    """
+    #Partial validity check of time_list
+    if time_list[-1] <=0 :
+        print("Error in 'geometric_brownian_motion_1d_timeList' of 'simulation' : arg 'time_list' is not valid (last value not non negativ)")
+        return
+    
+    n_times = len(time_list)
+    standard_brownian = standard_brownian_motion_1d_timeList(time_list=time_list, n_paths=n_paths, 
+                                                                            increments=increments, random_state=random_state)
+
+    if increments == True :
+        time_list_increments = time_list - (np.append(0, (time_list[:-1])))
+        time_list_increments_array = np.repeat(time_list_increments, n_paths).reshape(n_times, n_paths)
+
+        return value_at_0*np.exp( (drift - (volatility**2)/2)*time_list_increments_array + volatility*standard_brownian)
+
+    else :
+        standard_brownian = standard_brownian_motion_1d_timeList(time_list=time_list, n_paths=n_paths, 
+                                                                increments=increments, random_state=random_state)
+        time_list_array = np.repeat(time_list, n_paths).reshape(n_times, n_paths)
+
+        return value_at_0*np.exp( (drift - (volatility**2)/2)*time_list_array + volatility*standard_brownian)
+
+#test
+"""
+time_list = np.linspace(0, 2, 10000, endpoint=True)
+volatility = .25
+drift = .02
+S0 = 1
+
+S = geometric_brownian_motion_1d_timeList(time_list=time_list, n_paths=3, value_at_0=S0, drift=drift, volatility=volatility)
+plt.plot(time_list, S[:,0])
+plt.show()
+"""
+
+
+def geometric_brownian_motion_1d_timeParameters(n_times: int, n_paths : int,
+                                                final_time: float = 1.0,
+                                                value_at_0: float=1.0,
+                                                drift: float=1.0,
+                                                volatility: float=0.0,
+                                                increments : bool = False,
+                                                random_state: np.random.Generator=rng) :
+    """ Geometric brownian motion (1 dimension) generator
+
+    Draw 'n_paths' of geometric brownian motion using the independant gaussians generated with numpy.
+    Generated using independent increasing increments.
+
+    Args:
+        n_times (int): number of timesteps
+        n_paths (int): number of paths simulated
+        final_time (float, optional): Final time of simulation. Defaults to 1.0.
+        value_at_0 (float): value of the geometric brownian motion at time = 0.
+        drift (float): drift of the geometric brownian motion. 
+        volatility (float): volatility of the geometric brownian motion.
+        increments (bool) : Determine if we return the increments array or not.
+        random_state : 'np.random.Generator' used for simulation. Defaults to rng.
+
+    Returns:
+        Array of float representing the values of the geometric brownian motion at times in the time_list.
+    """
+    #Validity check of args
+    if final_time <=0 :
+        print("Error in 'geometric_brownian_motion_1d_timeParameters' of 'simulation' : arg 'final_time' is not valid.")
+        return
+
+    step = final_time/n_times
+    standard_brownian = standard_brownian_motion_1d_timeParameters(n_times=n_times, n_paths=n_paths, 
+                                                                                final_time=final_time,
+                                                                                increments=increments, random_state=random_state)
+        
+    if increments == True :
+        return value_at_0*np.exp( (drift - (volatility**2)/2)*step + volatility*standard_brownian_)
+
+    else :
+        time_list = np.arange(0, final_time + step, step)
+        time_list_array = np.repeat(time_list, n_paths).reshape(len(time_list), n_paths)
+
+        return value_at_0*np.exp( (drift - (volatility**2)/2)*time_list_array + volatility*standard_brownian)
+
+#test
+"""
+T=2
+N=10000
+step= T/N
+time_list = np.arange(0, T + step, step)
+M=3
+volatility = .25
+drift = .02
+S0 = 1
+
+S = geometric_brownian_motion_1d_timeParameters(n_times=N, n_paths=M, final_time=T,
+                                                value_at_0=S0, drift=drift, volatility=volatility)
+plt.plot(time_list, S[:,0])
+plt.show()
+"""
+
+
+def geometric_brownian_motion_2d_timeList(time_list, n_paths: int = 1, 
+                                        value_at_0 =1.0,
+                                        drift = .02,
+                                        volatility = .25,
+                                        correlation: float=0.0,
+                                        increments: bool = False,
+                                        random_state: np.random.Generator=rng) :
+    """Geometric brownian motion (2 dimension) generator
+
+    Draw 'n_paths' of geometric brownian motion using the independant gaussians generated with numpy.
+    Generated using independent increasing increments.
+
+    Args:
+        time_list (array_like): non decreasing sequence of non negativ float representing time. 
+            This function doesn't check the 'non-decreasing' caracteristic so it won't return a geometric 
+            brownian motion if time_list is not non decreasing.
+        n_paths (int): number of paths to generate
+        value_at_0 (array-like): values of the geometric brownian motion at time = 0.
+        drift (array-like): drifts of the geometric brownian motion. 
+        volatility (array-like): volatilities of the geometric brownian motion.
+        correlation (float, optional): float between -1 and 1. Correlation between the two components of the brownian. Defaults to 0.0.
+        increments (bool) : Determine if we return the increments array or not.
+        random_state : 'np.random.Generator' used for simulation. Defaults to rng.
+
+    Returns:
+        Array of float representing the values of the geometric brownian motion at times in the time_list.
+    """
+    #Partial validity check of time_list
+    if time_list[-1] <=0 :
+        print("Error in 'geometric_brownian_motion_2d_timeList' of 'simulation' : arg 'time_list' is not valid (last value not non negativ)")
+        return
+    if correlation > 1 or correlation < -1 :
+        print("Error in 'geometric_brownian_motion_2d_timeList' of 'simulation' : argument 'correlation' is not a correlation")
+        return
+    
+    n_times = len(time_list)
+    standard_brownian = standard_brownian_motion_2d_timeList(time_list=time_list, n_paths=n_paths, 
+                                                            correlation=correlation,
+                                                            increments=increments, random_state=random_state)
+    value_at_0, drift, volatility = np.array(value_at_0), np.array(drift), np.array(volatility)
+    
+    #Dimensions check and redimensionning 
+    if value_at_0.size == 1 :
+        value_at_0 = np.repeat(value_at_0, 2)
+    if drift.size == 1 :
+        drift = np.repeat(drift, 2)
+    if volatility.size == 1 :
+        volatility = np.repeat(volatility, 2)
+    if volatility.size != 2 or drift.size != 2 or value_at_0.size !=2 :
+        print("Error in 'geometric_brownian_motion_2d_timeList' of 'simulation' : 'value_at_0', 'drift' or 'volatility' don't have the right size")
+
+    #Distinguish 2 cases                                          
+    if increments == True :
+        time_list_increments = time_list - (np.append(0, (time_list[:-1])))
+        time_list_increments_array = np.repeat(time_list_increments, n_paths).reshape(n_times, n_paths)
+
+        return  [
+        value_at_0[i]*np.exp( (drift[i] - (volatility[i]**2)/2)*time_list_increments_array + volatility[i]*standard_brownian[i,:])
+        for i in range(2) 
+        ]
+
+    else :
+        time_list_array = np.repeat(time_list, n_paths).reshape(len(time_list), n_paths)
+
+        return [
+        value_at_0[i]*np.exp( (drift[i] - (volatility[i]**2)/2)*time_list_array + volatility[i]*standard_brownian[i,:])
+        for i in range(2) 
+        ]
+
+
+def geometric_brownian_motion_2d_timeParameters(n_times: int, n_paths : int,
+                                                final_time: float = 1.0,
+                                                value_at_0: float=1.0,
+                                                drift: float=1.0,
+                                                volatility: float=0.0,
+                                                correlation: float=0.0,
+                                                increments : bool = False,
+                                                random_state: np.random.Generator=rng) :
+    """ Geometric brownian motion (1 dimension) generator
+
+    Draw 'n_paths' of geometric brownian motion using the independant gaussians generated with numpy.
+    Generated using independent increasing increments.
+
+    Args:
+        n_times (int): number of timesteps
+        n_paths (int): number of paths simulated
+        final_time (float, optional): Final time of simulation. Defaults to 1.0.
+        value_at_0 (float): value of the geometric brownian motion at time = 0.
+        drift (float): drift of the geometric brownian motion. 
+        volatility (float): volatility of the geometric brownian motion.
+        correlation (float, optional): float between -1 and 1. Correlation between the two components of the brownian. Defaults to 0.0.
+        increments (bool) : Determine if we return the increments array or not.
+        random_state : 'np.random.Generator' used for simulation. Defaults to rng.
+
+    Returns:
+        Array of float representing the values of the geometric brownian motion at times in the time_list.
+    """
+    #Validity check of args
+    if final_time <=0 :
+        print("Error in 'geometric_brownian_motion_2d_timeParameters' of 'simulation' : arg 'final_time' is not valid.")
+        return
+    if correlation > 1 or correlation < -1 :
+        print("Error in 'geometric_brownian_motion_2d_timeParameters' of 'simulation' : argument 'correlation' is not a correlation")
+        return
+
+    step = final_time/n_times
+    standard_brownian = standard_brownian_motion_2d_timeParameters(n_times=n_times, n_paths=n_paths, 
+                                                            final_time=final_time, correlation=correlation,
+                                                            increments=increments, random_state=random_state)
+    value_at_0, drift, volatility = np.array(value_at_0), np.array(drift), np.array(volatility)
+    
+    #Dimensions check and redimensionning 
+    if value_at_0.size == 1 :
+        value_at_0 = np.repeat(value_at_0, 2)
+    if drift.size == 1 :
+        drift = np.repeat(drift, 2)
+    if volatility.size == 1 :
+        volatility = np.repeat(volatility, 2)
+    if volatility.size != 2 or drift.size != 2 or value_at_0.size !=2 :
+        print("Error in 'geometric_brownian_motion_2d_timeParameters' of 'simulation' : 'value_at_0', 'drift' or 'volatility' don't have the right size")
+
+    #Distinguish 2 cases                                          
+    if increments == True :
+        return  [
+        value_at_0[i]*np.exp( (drift[i] - (volatility[i]**2)/2)*step + volatility[i]*standard_brownian[i,:])
+        for i in range(2) 
+        ]
+
+    else :
+        time_list = np.arange(0, final_time + step, step)
+        time_list_array = np.repeat(time_list, n_paths).reshape(len(time_list), n_paths)
+
+        return [
+        value_at_0[i]*np.exp( (drift[i] - (volatility[i]**2)/2)*time_list_array + volatility[i]*standard_brownian[i,:])
+        for i in range(2) 
+        ]
+
+
+def geometric_brownian_motion_multidim_timeList(time_list, n_paths: int = 1, 
+                                        value_at_0 =1.0, drift = .02,
+                                        volatility = .25,
+                                        correlation: np.array=None,
+                                        cholesky: bool = True,
+                                        increments: bool = False,
+                                        random_state: np.random.Generator=rng) :
+    """Geometric brownian motion (multi dimension) generator
+
+    Draw 'n_paths' of geometric brownian motion using the independant gaussians generated with numpy.
+    Generated using independent increasing increments.
+
+    Args:
+        time_list (array_like): non decreasing sequence of non negativ float representing time. 
+            This function doesn't check the 'non-decreasing' caracteristic so it won't return a geometric 
+            brownian motion if time_list is not non decreasing.
+        n_paths (int): number of paths to generate
+        value_at_0 (array-like): values of the geometric brownian motion at time = 0.
+        drift (array-like): drifts of the geometric brownian motion. 
+        volatility (array-like): volatilities of the geometric brownian motion.
+        correlation (float, optional): float between -1 and 1. Correlation between the two components of the brownian. Defaults to 0.0.
+        cholesky (bool): if True then the function suppose the correlation matrix is definite positiv. Defaults to True.
+        increments (bool) : Determine if we return the increments array or not.
+        random_state : 'np.random.Generator' used for simulation. Defaults to rng.
+
+    Returns:
+        Array of float representing the values of the geometric brownian motion at times in the time_list.
+        Shape : (dimension = correlation.shape[0], len(time_list), n_paths)
+    """
+    #Partial validity check of time_list
+    if time_list[-1] <=0 :
+        print("Error in 'geometric_brownian_motion_multidim_timeList' of 'simulation' : arg 'time_list' is not valid (last value not non negativ)")
+        return
+    
+    dim = correlation.shape[0] #dimension of geometric brownian motion
+    n_times = len(time_list)
+    standard_brownian = standard_brownian_motion_multidim_timeList(time_list=time_list, n_paths=n_paths, 
+                                                            correlation=correlation, cholesky=cholesky,
+                                                            increments=increments, random_state=random_state)
+    value_at_0, drift, volatility = np.array(value_at_0), np.array(drift), np.array(volatility)
+    
+    #Dimensions check and redimensionning 
+    if value_at_0.size == 1 :
+        value_at_0 = np.repeat(value_at_0, dim)
+    if drift.size == 1 :
+        drift = np.repeat(drift, dim)
+    if volatility.size == 1 :
+        volatility = np.repeat(volatility, dim)
+    if volatility.size != dim or drift.size != dim or value_at_0.size !=dim :
+        print("Error in 'geometric_brownian_motion_2d_timeList' of 'simulation' : 'value_at_0', 'drift' or 'volatility' don't have the right size")
+
+    if np.all( correlation <= 1) and np.all( correlation >= -1) :
+        #Distinguish 2 cases
+        if increments == True :
+            time_list_increments = time_list - (np.append(0, (time_list[:-1])))
+            time_list_increments_array = np.repeat(time_list_increments, n_paths).reshape(n_times, n_paths)
+
+            return  [
+            value_at_0[i]*np.exp( (drift[i] - (volatility[i]**2)/2)*time_list_increments_array + volatility[i]*standard_brownian[i,:])
+            for i in range(dim) 
+            ]
+
+        else :
+            time_list_array = np.repeat(time_list, n_paths).reshape(len(time_list), n_paths)
+
+            return [
+            value_at_0[i]*np.exp( (drift[i] - (volatility[i]**2)/2)*time_list_array + volatility[i]*standard_brownian[i,:])
+            for i in range(dim) 
+            ]
+    
+    else :
+        print("Error in 'geometric_brownian_motion_multidim_timeList' of 'simulation' : arg 'correlation' is not a correlation matrix")
+        return
+
+
+def geometric_brownian_motion_multidim_timeParameters(n_times: int, n_paths : int,
+                                                final_time: float = 1.0,
+                                                value_at_0 =1.0, drift = .02,
+                                                volatility = .25,
+                                                correlation: np.array=None,
+                                                increments : bool = False,
+                                                random_state: np.random.Generator=rng) :
+    """ Geometric brownian motion (multi dimension) generator
+
+    Draw 'n_paths' of geometric brownian motion using the independant gaussians generated with numpy.
+    Generated using independent increasing increments.
+
+    Args:
+        n_times (int): number of timesteps
+        n_paths (int): number of paths to generate
+        final_time (float, optional): Final time of simulation. Defaults to 1.0.
+        value_at_0 (array-like): values of the geometric brownian motion at time = 0.
+        drift (array-like): drifts of the geometric brownian motion. 
+        volatility (array-like): volatilities of the geometric brownian motion.
+        correlation (float, optional): float between -1 and 1. Correlation between the two components of the brownian. Defaults to 0.0.
+        cholesky (bool): if True then the function suppose the correlation matrix is definite positiv. Defaults to True.
+        increments (bool) : Determine if we return the increments array or not.
+        random_state : 'np.random.Generator' used for simulation. Defaults to rng.
+
+    Returns:
+        Array of float representing the values of the geometric brownian motion at times in the time_list.
+    """
+    #Validity check of args
+    if final_time <=0 :
+        print("Error in 'geometric_brownian_motion_2d_timeParameters' of 'simulation' : arg 'final_time' is not valid.")
+        return
+    
+    dim = correlation.shape[0] #dimension of geometric brownian motion
+    step = final_time/n_times
+    standard_brownian = standard_brownian_motion_multidim_timeParameters(n_times=n_times, n_paths=n_paths,
+                                                            final_time=final_time,
+                                                            correlation=correlation, cholesky=cholesky,
+                                                            increments=increments, random_state=random_state)
+    value_at_0, drift, volatility = np.array(value_at_0), np.array(drift), np.array(volatility)
+    
+    #Dimensions check and redimensionning 
+    if value_at_0.size == 1 :
+        value_at_0 = np.repeat(value_at_0, dim)
+    if drift.size == 1 :
+        drift = np.repeat(drift, dim)
+    if volatility.size == 1 :
+        volatility = np.repeat(volatility, dim)
+    if volatility.size != dim or drift.size != dim or value_at_0.size !=dim :
+        print("Error in 'geometric_brownian_motion_2d_timeList' of 'simulation' : 'value_at_0', 'drift' or 'volatility' don't have the right size")
+
+    if np.all( correlation <= 1) and np.all( correlation >= -1) :
+        #Distinguish 2 cases
+        if increments == True :
+            return  [
+            value_at_0[i]*np.exp( (drift[i] - (volatility[i]**2)/2)*step + volatility[i]*standard_brownian[i,:])
+            for i in range(dim) 
+            ]
+
+        else :
+            time_list = np.arange(0, final_time + step, step)
+            time_list_array = np.repeat(time_list, n_paths).reshape(len(time_list), n_paths)
+
+            return [
+            value_at_0[i]*np.exp( (drift[i] - (volatility[i]**2)/2)*time_list_array + volatility[i]*standard_brownian[i,:])
+            for i in range(dim) 
+            ]
+    
+    else :
+        print("Error in 'geometric_brownian_motion_multidim_timeList' of 'simulation' : arg 'correlation' is not a correlation matrix")
+        return
+
+
+def brownian_bridge_1d_timeList(time_list, n_paths: int = 1, 
+                                random_state: np.random.Generator=rng) :
+    """Standard brownian bridge (1 dimension) generator
+
+    Draw 'n_paths' of a brownian bridge using the independant gaussians generated with numpy.
+    Generated using independent increasing increments.
+
+    Args:
+        time_list (array_like): non decreasing sequence of non negativ float representing time. 
+            This function doesn't check the 'non-decreasing' caracteristic so it won't return a brownian bridge
+            if time_list is not non decreasing.
+        n_paths (int): number of paths to generate.
+        random_state : 'np.random.Generator' used for simulation. Defaults to rng.
+
+    Returns:
+        Array of float representing the values of the brownian bridge at times in the time_list.
+    """
+    #Partial validity check of time_list
+    if time_list[-1] <=0 :
+        print("Error in 'brownian_bridge_1d_timeList' of 'simulation' : arg 'time_list' is not valid (last value not non negativ)")
+        return
+
+    standard_brownian_motion = standard_brownian_motion_1d_timeList(time_list =time_list, n_paths=n_paths,
+                                                                    increments=False, random_state=random_state)                                               
+    T = time_list[-1]
+    B_T = standard_brownian_motion[-1,:]
+
+    return standard_brownian_motion - (1/T)*time_list*B_T
+
+
+def brownian_bridge_1d_timeParameters(n_times: int, n_paths : int,
+                                    final_time: float = 1.0,
+                                    random_state: np.random.Generator=rng) :
+    """Standard brownian bridge (1 dimension) generator
+
+    Draw 'n_paths' of standard brownian bridge using the independant gaussians generated with numpy.
+    Generated using independent increasing increments.
+
+    Args:
+        n_times (int): number of timesteps
+        n_paths (int): number of paths simulated
+        final_time (float, optional): Final time of simulation. Defaults to 1.0.
+        random_state : 'np.random.Generator' used for simulation. Defaults to rng.
+
+    Returns:
+        `np.array` of shape `(n_times+1, n_paths)` containing the paths.
+    """
+    #Validity check of args
+    if final_time <=0 :
+        print("Error in 'brownian_bridge_1d_timeParameters' of 'simulation' : arg 'final_time' is not valid.")
+        return
+
+    step = final_time/n_times
+    time_list = np.arange(0, final_time + step, step)
+    standard_brownian_motion = standard_brownian_motion_1d_timeParameters(n_times=n_times, n_paths=n_paths,
+                                                                    final_time=final_time, 
+                                                                    increments=False, random_state=random_state) 
+    B_T = standard_brownian_motion[-1,:]
+
+    return standard_brownian_motion - (1/final_time)*time_list*B_T
+    
+
+def fractionnal_brownian_motion(hudhe) :
     return
 
 
-def brownian_bridge() :
-    return
 
-
-def geometric_brownian_motion() :
-    return
-
-
-###
-"""
-N = 10**3
-times = np.linspace(0,10,N)
-Brownian = standard_brownian_simulation(times)
-plt.plot(times, Brownian)
-plt.show()
-"""
 
 # %%
