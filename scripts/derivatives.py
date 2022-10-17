@@ -97,6 +97,7 @@ def CRR(S0,T,r,u,d, h=identity_func) :
 ################################################################################################################
 ### Modèle de BS
 # Prix d'un call modèle de BS -> portefeuille dynamique
+
 # Sensibilités (delta, vega, gamma, theta)
 
 ### Vol implicite 
