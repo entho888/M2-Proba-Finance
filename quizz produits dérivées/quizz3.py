@@ -1,14 +1,19 @@
 ### QUIZZ 2 : 18/10/2022 ###
 # Note : 8.5 
 # Note si j'étais pas un bouffon : 17 ... 
+# Note si j'étais réveillé et en forme : 20 .......................;
 
 # On importe les bonnes librairies
 import sys
 sys.path.append('/workspace/M2-Proba-Finance/scripts')
 import derivatives as deriv
 import numpy as np
-# import simulation as sim
+# import simulation as sim  # pas nécessaire 
 
+##########################################################################################################################
+# TIPS : double clique sur les trucs écrits en latex du quizz ouvre un page où on peut selectionner ces trucs et les c/c.
+# Utile pour les données qui sont souvent en latex 
+##########################################################################################################################
 
 # Question 1
 print('Q1 answer : ', 1000 - 2*(100 +80 + 8*8)) # J'aurais du le faire sur python car je me suis trompé sur le papier ... erreur de calcul
