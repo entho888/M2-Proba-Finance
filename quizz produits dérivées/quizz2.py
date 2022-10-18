@@ -4,7 +4,7 @@
 
 # On importe les bonnes librairies
 import sys
-sys.path.append('/workspace/Derivatives/scripts')
+sys.path.append('/workspace/M2-Proba-Finance/scripts')
 from derivatives import *
 
 # Variables

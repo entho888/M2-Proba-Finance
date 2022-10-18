@@ -144,7 +144,7 @@ def delta_put_BS_at_t(St, K, t, T, sigma, r) : return d1(St, K, t, T, sigma, r) 
 
 def gamma_BS_at0(S0, K, T, sigma, r) : return (1/(S0*sigma*np.sqrt(T)))*normal_density(d_plus(S0*np.exp(r*T), K, T, sigma))
 
-def gamma_BS_at_t(St, K, t, T, sigma, r) : return (1/(S0*sigma*np.sqrt(T-t)))*normal_density(d1(St, K, t, T, sigma, r))
+def gamma_BS_at_t(St, K, t, T, sigma, r) : return (1/(St*sigma*np.sqrt(T-t)))*normal_density(d1(St, K, t, T, sigma, r))
 
 def delta_strike_call_BS_at0(S0, K, T, sigma, r) : return -np.exp(-r*T)*d_minus(S0*np.exp(r*T), K, T, sigma)
 
@@ -196,8 +196,8 @@ def implied_volatility_bisection(S0, T, K, r, Market_price, max_ite, eps) :
 
     if i > max_ite :
         print("'implied_volatility_bisection' : number of iterations too high")
-        return z
-    return z
+        return z/(1-z), error, i
+    return z/(1-z), error, i
 
 
 # Descente de gradients -> vol implicite
@@ -217,8 +217,8 @@ def implied_volatility_NewtonRaphson(S0, T, K, r, Market_price, max_ite, eps) :
 
     if i > max_ite :
         print("'implied_volatility_NewtonRaphson' : number of iterations too high")
-        return sigma_
-    return sigma_
+        return sigma_, error, i
+    return sigma_, error, i
 
 
 # Estimateur de la variance 

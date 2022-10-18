@@ -1450,7 +1450,7 @@ def fractionnal_brownian_motion_1d_timeList(time_list, n_paths: int = 1,
     return gaussian_vector_distribution(size=n_paths, sigma = covariance_matrix, cholesky=False, random_state=random_state)
 
 #test
-
+"""
 T = 2
 N = 1000
 M = 1
@@ -1458,7 +1458,7 @@ times = np.arange(N+1)*(T/N)
 fMB = fractionnal_brownian_motion_1d_timeList(times, n_paths=M)
 plt.plot(times, fMB)
 plt.show()
-
+"""
 
 
 def fractionnal_brownian_motion_1d_timeParameters(n_times: int, n_paths: int = 1, 
