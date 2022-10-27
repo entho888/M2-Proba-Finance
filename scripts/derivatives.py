@@ -291,6 +291,11 @@ def DOC(St, D, K, t, T, sigma=sigma, r=r, q=q) :
 def BinDOC(St, D, K, t, T, sigma=sigma, r=r, q=q) :
     return BinCall_at_t(St, K, t, T, sigma=sigma, r=r, q=q) - BinDIC(St, D, K, t, T, sigma=sigma, r=r, q=q)
 
+def call_power_asset(St, K, t, T, n, sigma=sigma, r=r, q=q) :
+    d1 = (np.log(K/(St**n)) - (T-t)*n*(r-q-(sigma**2)/2))/(sigma*n*np.sqrt(T-t))
+    d2 = d1 - sigma*n*np.sqrt(T-t)
+    return (St**n)*np.exp((T-t)*(-r+r*n-q*n-((sigma**2)*(n/2)) + (sigma**2)*(n**2)/2 ))*(1 - scipy.stats.norm.cdf(d2)) - K*np.exp(-r*(T-t))*(1 - scipy.stats.norm.cdf(d1))
+
 
 #Test 
 """

@@ -1,0 +1,5 @@
+Q1 answer : 0.4513
+Q2 answer : 0.1958
+Q3 answer : [-40.583   0.417   0.792]
+Q4 answer : 24.07
+Q5 answer : 2.49

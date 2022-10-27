@@ -32,7 +32,7 @@ answers.write('\nQ2 answer : ' + str( np.round( 2  , decimals =  2 )))
 
 """
 print('Q3 answer : ', np.round(   , decimals =  ))
-answers.write('\Q3 answer : ' + str( np.round(   , decimals =   )))
+answers.write('\nQ3 answer : ' + str( np.round(   , decimals =   )))
 """
 
 # Question 4
