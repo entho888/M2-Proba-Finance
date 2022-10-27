@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 
 
 #Variables
+sigma = 0.3
+r = 0.004
+q = 0.002
 
 #relation prix comptant / prix forward 
 
@@ -98,16 +101,16 @@ def CRR(S0,T,r,u,d, h=identity_func) :
 def normal_density(x) :
     return (1/np.sqrt(2*np.pi))*np.exp(-.5*(x**2))
 
-def d_plus(x, y, T, sigma) :
+def d_plus(x, y, T, sigma=sigma) :
     return (1/(sigma*np.sqrt(T)))*np.log(x/y) + .5*sigma*np.sqrt(T)
 
-def d_minus(x, y, T, sigma) :
+def d_minus(x, y, T, sigma=sigma) :
     return (1/(sigma*np.sqrt(T)))*np.log(x/y) - .5*sigma*np.sqrt(T)
 
-def d1(St, K, t, T, sigma, r) :
+def d1(St, K, t, T, sigma=sigma, r=r) :
     return (1/(sigma*np.sqrt(T-t)))*(np.log(St/K) + (r + .5*(sigma**2))*(T-t))
 
-def d2(St, K, t, T, sigma, r) :
+def d2(St, K, t, T, sigma=sigma, r=r) :
     return d1(St, K, t, T, sigma, r) - sigma*np.sqrt(T-t)
 
 def AS_standard_gaussian_cdf_approx(x) :
@@ -121,72 +124,75 @@ def AS_standard_gaussian_cdf_approx(x) :
 
     return 1 - (1/np.sqrt(2*np.pi))*np.exp(-.5*(x**2))*(b1*(t**2) + b2*(t**2) + b3*(t**2) + b4*(t**2) + b5*(t**2))
 
-def call_BS_at0(T, S0, K, sigma, r) :
-    return S0*scipy.stats.norm.cdf(d_plus(S0*np.exp(r*T), K, T, sigma)) - K*np.exp(-r*T)*scipy.stats.norm.cdf(d_minus(S0*np.exp(r*T), K, T, sigma))
+def call_BS_at0(S0, K, T, sigma=sigma, r=r, q=q) :
+    return S0*np.exp(-q*T)*scipy.stats.norm.cdf(d_plus(S0*np.exp((r-q)*T), K, T, sigma)) - K*np.exp(-r*T)*scipy.stats.norm.cdf(d_minus(S0*np.exp((r-q)*T), K, T, sigma))
 
-def put_BS_at0(T, S0, K, sigma, r) :
-    return K*np.exp(-r*T)*scipy.stats.norm.cdf(-d_minus(S0*np.exp(r*T), K, T, sigma)) - S0*scipy.stats.norm.cdf(-d_plus(S0*np.exp(r*T), K, T, sigma))
+def put_BS_at0(S0, K, T, sigma=sigma, r=r, q=q) :
+    return K*np.exp(-r*T)*scipy.stats.norm.cdf(-d_minus(S0*np.exp((r-q)*T), K, T, sigma)) - S0*np.exp(-q*T)*scipy.stats.norm.cdf(-d_plus(S0*np.exp(r*T), K, T, sigma))
     
-def call_BS_at_t(St, K, t, T, sigma, r) :
-    return St*scipy.stats.norm.cdf(d1(St, K, t, T, sigma, r)) - K*np.exp(-r*(T-t))*scipy.stats.norm.cdf(d2(St, K, t, T, sigma, r))
+def call_BS_at_t(St, K, t, T, sigma=sigma, r=r, q=q) :
+    return call_BS_at0(St, K, T-t, sigma, r, q)
 
-def put_BS_at_t(St, K, t, T, sigma, r) :
-    return K*np.exp(-r*(T-t))*scipy.stats.norm.cdf(-d2(St, K, t, T, sigma, r)) - St*scipy.stats.norm.cdf(-d1(St, K, t, T, sigma, r)) 
+def put_BS_at_t(St, K, t, T, sigma=sigma, r=r, q=q) :
+    return put_BS_at0(St, K, T-t, sigma, r, q)
 
 # Sensibilités (delta, vega, gamma, theta)
-def delta_call_BS_at0(S0, K, T, sigma, r) : return d_plus(S0*np.exp(r*T), K, T, sigma)
+def delta_call_BS_at0(S0, K, T, sigma=sigma, r=r, q=q) : return np.exp(-q*T)*scipy.stats.norm.cdf(d_plus(S0*np.exp((r-q)*T), K, T, sigma))
 
-def delta_put_BS_at0(S0, K, T, sigma, r) : return d_plus(S0*np.exp(r*T), K, T, sigma) - 1
+def delta_put_BS_at0(S0, K, T, sigma=sigma, r=r, q=q) : return np.exp(-q*T)*(scipy.stats.norm.cdf(d_plus(S0*np.exp((r-q)*T), K, T, sigma)) - 1)
 
-def delta_call_BS_at_t(St, K, t, T, sigma, r) : return d1(St, K, t, T, sigma, r)
+def delta_call_BS_at_t(St, K, t, T, sigma=sigma, r=r, q=q) : return delta_call_BS_at0(St, K, T-t, sigma, r, q)
 
-def delta_put_BS_at_t(St, K, t, T, sigma, r) : return d1(St, K, t, T, sigma, r) - 1
+def delta_put_BS_at_t(St, K, t, T, sigma=sigma, r=r, q=q) : return delta_put_BS_at0(St, K, T-t, sigma, r, q)
 
-def gamma_BS_at0(S0, K, T, sigma, r) : return (1/(S0*sigma*np.sqrt(T)))*normal_density(d_plus(S0*np.exp(r*T), K, T, sigma))
+def gamma_BS_at0(S0, K, T, sigma=sigma, r=r, q=q) : return (1/(S0*sigma*np.sqrt(T)))*np.exp(-q*T)*normal_density(d_plus(S0*np.exp((r-q)*T), K, T, sigma))
 
-def gamma_BS_at_t(St, K, t, T, sigma, r) : return (1/(St*sigma*np.sqrt(T-t)))*normal_density(d1(St, K, t, T, sigma, r))
+def gamma_BS_at_t(St, K, t, T, sigma=sigma, r=r, q=q) : return gamma_BS_at0(St, K, T-t, sigma, r, q)
 
-def delta_strike_call_BS_at0(S0, K, T, sigma, r) : return -np.exp(-r*T)*d_minus(S0*np.exp(r*T), K, T, sigma)
+def delta_strike_call_BS_at0(S0, K, T, sigma=sigma, r=r, q=q) : return -np.exp(-r*T)*scipy.stats.norm.cdf(d_minus(S0*np.exp((r-q)*T), K, T, sigma))
 
-def delta_strike_put_BS_at0(S0, K, T, sigma, r) : return np.exp(-r*T)*(1 - d_minus(S0*np.exp(r*T), K, T, sigma) )
+def delta_strike_put_BS_at0(S0, K, T, sigma=sigma, r=r, q=q) : return np.exp(-r*T)*(1 - scipy.stats.norm.cdf( d_minus(S0*np.exp((r-q)*T), K, T, sigma)) )
 
-def vega_BS_at0(S0, K, T, sigma, r) : return S0*normal_density(d_plus(S0*np.exp(r*T), K, T, sigma))*np.sqrt(T)
+def delta_strike_call_BS_at_t(St, K, t, T, sigma=sigma, r=r, q=q) : return delta_call_BS_at0(St, K, T-t, sigma, r, q)
 
-def vega_BS_at_t(St, K, t, T, sigma, r) : return St*normal_density(d1(St, K, t, T, sigma, r))*np.sqrt(T-t)
+def delta_strike_put_BS_at_t(St, K, t, T, sigma=sigma, r=r, q=q) : return delta_put_BS_at0(St, K, T-t, sigma, r, q)
 
-def theta_Call_BS_at0(S0, K, T, sigma, r) : 
-    return (S0*sigma)/(2*np.sqrt(T))*normal_density(d_plus(S0*np.exp(r*T), K, T, sigma)) + r*K*np.exp(-r*T)*scipy.stats.norm.cdf(d_minus(S0*np.exp(r*T), K, T, sigma))
+def vega_BS_at0(S0, K, T, sigma=sigma, r=r, q=q) : return S0*normal_density(d_plus(S0*np.exp((r-q)*T), K, T, sigma))*np.sqrt(T)*np.exp(-q*T)
 
-def theta_Put_BS_at0(S0, K, T, sigma, r) : 
-    return (S0*sigma)/(2*np.sqrt(T))*normal_density(d_plus(S0*np.exp(r*T), K, T, sigma)) - r*K*np.exp(-r*T)*(1 - scipy.stats.norm.cdf(d_minus(S0*np.exp(r*T), K, T, sigma)))
+def vega_BS_at_t(St, K, t, T, sigma=sigma, r=r, q=q) : return vega_BS_at0(St, K, T-t, sigma, r, q)
 
-def theta_Call_BS_at_t(St, K, t, T, sigma, r)  : 
-    return (St*sigma)/(2*np.sqrt(T-t))*normal_density(d1(St, K, t, T, sigma, r)) + r*K*np.exp(-r*(T-t))*scipy.stats.norm.cdf(d2(St, K, t, T, sigma, r))
+def theta_Call_BS_at0(S0, K, T, sigma=sigma, r=r, q=q) : 
+    return np.exp(-q*T)*(S0*sigma)/(2*np.sqrt(T))*normal_density(d_plus(S0*np.exp((r-q)*T), K, T, sigma)) + r*K*np.exp(-r*T)*scipy.stats.norm.cdf(d_minus(S0*np.exp((r-q)*T), K, T, sigma)) -q*S0*np.exp(-q*T)*scipy.stats.norm.cdf(d_plus(S0*np.exp((r-q)*T), K, T, sigma))
 
-def theta_Put_BS_at_t(St, K, t, T, sigma, r)  : 
-    return (St*sigma)/(2*np.sqrt(T-t))*normal_density(d1(St, K, t, T, sigma, r)) - r*K*np.exp(-r*(T-t))*(1 - scipy.stats.norm.cdf(d2(St, K, t, T, sigma, r)))
+def theta_Put_BS_at0(S0, K, T, sigma=sigma, r=r, q=q) : 
+    return theta_Call_BS_at0(S0, K, T, sigma, r) + q*S0*np.exp(-q*T) -r*K*np.exp(-r*T)
 
-def rho_Call_BS_at0(S0, K, T, sigma, r) : return T*K*np.exp(-r*T)*scipy.stats.norm.cdf(d_minus(S0*np.exp(r*T), K, T, sigma))
+def theta_Call_BS_at_t(St, K, t, T, sigma=sigma, r=r, q=q)  : 
+    return theta_Call_BS_at0(St, K, T-t, sigma, r, q)
 
-def rho_Put_BS_at0(S0, K, T, sigma, r) : return -T*K*np.exp(-r*T)*(1 - scipy.stats.norm.cdf(d_minus(S0*np.exp(r*T), K, T, sigma)))
+def theta_Put_BS_at_t(St, K, t, T, sigma=sigma, r=r, q=q)  : 
+    return theta_Put_BS_at0(St, K, T-t, sigma, r, q)
 
-def rho_Call_BS_at_t(St, K, t, T, sigma, r) :
-    return (T-t)*K*np.exp(-r*(T-t))*scipy.stats.norm.cdf(d2(St, K, t, T, sigma, r))
+def rho_Call_BS_at0(S0, K, T, sigma=sigma, r=r, q=q) : return T*K*np.exp(-r*T)*scipy.stats.norm.cdf(d_minus(S0*np.exp((r-q)*T), K, T, sigma))
 
-def rho_Put_BS_at_t(St, K, t, T, sigma, r) :
-    return -(T-t)*K*np.exp(-r*(T-t))*(1 - scipy.stats.norm.cdf(d2(St, K, t, T, sigma, r)))
+def rho_Put_BS_at0(S0, K, T, sigma=sigma, r=r, q=q) : return -T*K*np.exp(-r*T)*(1 - scipy.stats.norm.cdf(d_minus(S0*np.exp((r-q)*T), K, T, sigma)))
 
+def rho_Call_BS_at_t(St, K, t, T, sigma=sigma, r=r, q=q) :
+    return rho_Call_BS_at0(St, K, T-t, sigma, r, q)
+
+def rho_Put_BS_at_t(St, K, t, T, sigma=sigma, r=r, q=q) :
+    return rho_Put_BS_at0(St, K, T-t, sigma, r, q)
 
 ### Vol implicite 
 # Dichotomie -> vol implicite
-def implied_volatility_bisection(S0, T, K, r, Market_price, max_ite, eps) :
+def implied_volatility_bisection(S0, T, K, Market_price, max_ite, eps=10**(-5), r=r, q=q) :
     x, y = 0, 1
     i = 0
     error = 2*eps
 
     while i <= max_ite or error > eps :
         z = (x + y)/2
-        call_BS = call_BS_at0(T, S0, K, z/(1-z), r)
+        call_BS = call_BS_at0(T, S0, K, z/(1-z), r, q)
 
         if Market_price > call_BS : x, y = z, y
         if Market_price < call_BS : x, y = x, z
@@ -201,16 +207,16 @@ def implied_volatility_bisection(S0, T, K, r, Market_price, max_ite, eps) :
 
 
 # Descente de gradients -> vol implicite
-def implied_volatility_NewtonRaphson(S0, T, K, r, Market_price, max_ite, eps) :
-    sigma_ = np.sqrt((2/T)*np.abs(np.log(S0*np.exp(r*T)/K)))
+def implied_volatility_NewtonRaphson(S0, T, K, Market_price, max_ite, eps=10**(-5), r=r, q=q) :
+    sigma_ = np.sqrt((2/T)*np.abs(np.log(S0*np.exp((r-q)*T)/K))) #PAS SUR DU q ICI !!!!!!
     i = 0
-    call_BS = call_BS_at0(T, S0, K, sigma_, r)
+    call_BS = call_BS_at0(T, S0, K, sigma_, r, q)
     error = np.abs(Market_price - call_BS)
 
     while i <= max_ite or error > eps :
-        sigma_ = sigma_ - (call_BS - Market_price)/vega_BS_at0(S0, K, T, sigma_, r)
+        sigma_ = sigma_ - (call_BS - Market_price)/vega_BS_at0(S0, K, T, sigma_, r, q)
         
-        call_BS = call_BS_at0(T, S0, K, sigma_, r)
+        call_BS = call_BS_at0(T, S0, K, sigma_, r, q)
 
         error = np.abs(Market_price - call_BS)
         i += 1
@@ -231,6 +237,89 @@ def volatility_approximation(asset_values_sample, times) :
     return sum
 
 
+##### OPTIONS BARRIERES 
+def BinCall_at0(S0, K, T, sigma=sigma, r=r, q=q) : 
+    return np.exp(-r*T)*scipy.stats.norm.cdf(d_minus(S0*np.exp((r-q)*T), K, T, sigma))
+
+def BinPut_at0(S0, K, T, sigma=sigma, r=r, q=q) : 
+    return np.exp(-r*T)*scipy.stats.norm.cdf(-d_minus(S0*np.exp((r-q)*T), K, T, sigma))
+
+def BinCall_at_t(St, K, t, T, sigma=sigma, r=r, q=q) : return BinCall_at0(St, K, T-t, sigma, r, q)
+
+def BinPut_at_t(St, K, t, T, sigma=sigma, r=r, q=q) : return BinPut_at0(St, K, T-t, sigma, r, q)
+
+def DIC_regular(St, D, K, t, T, sigma=sigma, r=r, q=q) :
+    if D > K :
+        print('Erreur dans DIC_regular : D > K pas regular')
+        return
+    nu = r - q
+    gamma = 1 - (2*nu)/(sigma**2)
+
+    if St > D :
+        return ((St/D)**(gamma - 1))*call_BS_at_t(D, K*St/D, t, T, sigma=sigma, r=r, q=q)
+    else : 
+        return call_BS_at_t(St, K, t, T, sigma=sigma, r=r, q=q)
+
+def BinDIC_regular(St, D, K, t, T, sigma=sigma, r=r, q=q) :
+    if D > K :
+        print('Erreur dans BinDIC_regular : D > K pas regular')
+        return
+    nu = r - q
+    gamma = 1 - (2*nu)/(sigma**2)
+
+    if St > D :
+        return ((St/D)**(gamma))*BinCall_at_t(D, K*St/D, t, T, sigma=sigma, r=r, q=q)
+    else : 
+        return BinCall_at_t(St, K, t, T, sigma=sigma, r=r, q=q)
+
+def BinDIC(St, D, K, t, T, sigma=sigma, r=r, q=q) :
+    if St <= D : return BinCall_at_t(St, K, t, T, sigma=sigma, r=r, q=q)
+    if D <= K : 
+        return BinDIC_regular(St, D, K, t, T, sigma=sigma, r=r, q=q)
+
+    else :
+        return BinCall_at_t(St, K, t, T, sigma=sigma, r=r, q=q) - np.exp(-r*(T-t)) + BinPut_at_t(St, D, t, T, sigma=sigma, r=r, q=q) + BinDIC_regular(St, D, D, t, T, sigma=sigma, r=r, q=q)
+
+def DIC(St, D, K, t, T, sigma=sigma, r=r, q=q) :
+    if St <= D : return call_BS_at_t(St, K, t, T, sigma=sigma, r=r, q=q)
+    if D <= K : return DIC_regular(St, D, K, t, T, sigma=sigma, r=r, q=q)
+    return call_BS_at_t(St, K, t, T, sigma=sigma, r=r, q=q) - call_BS_at_t(St, D, t, T, sigma=sigma, r=r, q=q) - (D-K)*BinCall_at_t(St, D, t, T, sigma=sigma, r=r, q=q) + DIC_regular(St, D, D, t, T, sigma=sigma, r=r, q=q) + (D-K)*BinDIC_regular(St, D, D, t, T, sigma=sigma, r=r, q=q)
+
+def DOC(St, D, K, t, T, sigma=sigma, r=r, q=q) :
+    return call_BS_at_t(St, K, t, T, sigma=sigma, r=r, q=q) - DIC(St, D, K, t, T, sigma=sigma, r=r, q=q)
+
+def BinDOC(St, D, K, t, T, sigma=sigma, r=r, q=q) :
+    return BinCall_at_t(St, K, t, T, sigma=sigma, r=r, q=q) - BinDIC(St, D, K, t, T, sigma=sigma, r=r, q=q)
+
+
+#Test 
+"""
+K = 90
+T = 4
+S0 = 100
+sigma = 0.3
+r = 0.004
+q = 0.002
+D = 85
+
+L = []
+L.append(BinPut_at0(S0, K, T))
+L.append(BinCall_at0(S0, K, T))
+L.append(DIC(S0, D, K, 0, T))
+L.append(BinDIC(S0, D, K, 0, T))
+L.append(DOC(S0, D, K, 0, T))
+print(L)
+
+D = 95
+
+L = []
+L.append(BinPut_at0(S0, K, T))
+L.append(BinCall_at0(S0, K, T))
+L.append(DIC(S0, D, K, 0, T))
+L.append(BinDIC(S0, D, K, 0, T))
+L.append(DOC(S0, D, K, 0, T))
+print(L)
+"""
 
 ### Modèle log décalé
 # Pricer

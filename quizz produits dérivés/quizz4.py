@@ -1,5 +1,5 @@
-### QUIZZ  X : XX/XX/202X ###
-# Note : XXX
+### QUIZZ  4 : 27/10/2022 ###
+# Note : 
 
 # On importe les bonnes librairies
 import sys
@@ -13,7 +13,7 @@ import numpy as np
 # Utile pour les données qui sont souvent en latex 
 ##########################################################################################################################
 
-answers = open("/workspace/M2-Proba-Finance/quizz produits dérivés/quizz_X_answers.txt", "w")
+answers = open("/workspace/M2-Proba-Finance/quizz produits dérivés/quizz_4_answers.txt", "w")
 
 # Question 1
 
