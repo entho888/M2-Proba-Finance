@@ -48,6 +48,7 @@ answers.write('\nQ2 answer : ' + str( np.round( A  , decimals =  4 )))
 
 
 # Question 3
+#Erratum ça c'est à 1 période .... 
 
 S_0=99.300000
 K=100.130000
@@ -62,11 +63,18 @@ def payoff1(x) :
     if x - K >= 0 : return x - K
     else : return 0
 
+"""
 A = deriv.CRRd1(S_0, r, u, d, h=payoff1)
 
 print('Q3 answer : ', np.round( A  , decimals = 3 ))
 answers.write('\nQ3 answer : ' + str( np.round(  A , decimals =  3 )))
+"""
 
+#Et donc à deux périodes ça donne ça :
+A = deriv.CRR(S_0, 2, r, u, d, h=payoff1)
+
+print('Q3 answer : ', np.round( A  , decimals = 3 ))
+answers.write('\nQ3 answer : ' + str( np.round(  A , decimals =  3 )))
 
 # Question 4
 

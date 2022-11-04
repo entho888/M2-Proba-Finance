@@ -57,6 +57,14 @@ def identity_func(x) :
 
 
 def Pascal_triangle(row_number) :
+    """Return the 'row_number'-th row of the pascal triangle (meaning is 'row_number'=n, it returns a list of length n+1)
+
+    Args:
+        row_number (int): positiv integer
+
+    Returns:
+        list: list of binomial coefficient of 'degree' 'row_number'.
+    """
     present_Row = []
     past_Row = [1]
     for i in range(1, row_number+1) :
@@ -71,12 +79,37 @@ def Pascal_triangle(row_number) :
 
 
 def CRRd1(S0,r,u,d, h=identity_func) :
+    """Cox Rox Rubinstein with 1 period
+
+    Args:
+        S0 (float): price of the asset at t=0
+        r (float): interest rate
+        u (float): increasement factor
+        d (float): decreasement (?) factor
+        h (function, optional): payoff. Defaults to identity_func.
+
+    Returns:
+        list : [amount of money placed in cash, parts of asset bought, price of the option]
+    """
     hSu = h(S0*u)
     hSd = h(S0*d)
     return [(1/((1+r)*(u-d)))*(hSd*u - hSu*d) , (hSu - hSd)/(S0*(u-d)), (1/((1+r)*(u-d)))*(hSu*(1+r-d) + hSd*(u - (1+r)))]
 
 
 def CRR(S0,T,r,u,d, h=identity_func) :
+    """Cox Rox Rubinstein with T periods
+
+    Args:
+        S0 (float): price of the asset at t=0
+        T (int): positiv integer. Number of periods 
+        r (float): interest rate
+        u (float): increasing factor
+        d (float): descreasing factor
+        h (function, optional): payoff. Defaults to identity_func.
+
+    Returns:
+        float: price of the option.
+    """
     hSu = h(S0*u)
     hSd = h(S0*d)
 
@@ -86,7 +119,7 @@ def CRR(S0,T,r,u,d, h=identity_func) :
 
     V = 0
 
-    for i in range(T) :
+    for i in range(T+1) :
         V+= Binomial_Coefficients[i]*(p**i)*((1-p)**(T-i))*h(S0*(u**i)*(d**(T-i)))
 
     return V/((1+r)**T)
@@ -114,6 +147,14 @@ def d2(St, K, t, T, sigma=sigma, r=r) :
     return d1(St, K, t, T, sigma, r) - sigma*np.sqrt(T-t)
 
 def AS_standard_gaussian_cdf_approx(x) :
+    """Abramowitz-Stegun gaussian cdf approximation
+
+    Args:
+        x (float): number when the cdf is evaluated
+
+    Returns:
+        float: float between 0 and 1. Approximation of the gaussian cdf evaluated in x?
+    """
     b0 = 0.2316419
     b1 = 0.319381530
     b2 = -0.356563782
@@ -237,7 +278,7 @@ def volatility_approximation(asset_values_sample, times) :
     return sum
 
 
-##### OPTIONS BARRIERES 
+##### OPTIONS BARRIERES (besoin de créer une classe black scholes parce que ça commence à être chiant)
 def BinCall_at0(S0, K, T, sigma=sigma, r=r, q=q) : 
     return np.exp(-r*T)*scipy.stats.norm.cdf(d_minus(S0*np.exp((r-q)*T), K, T, sigma))
 
